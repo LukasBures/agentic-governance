@@ -38,7 +38,7 @@
   </style>
 </head>
 <body>
-  <h2 style="padding-left: 20px;">Agentic Governance System Architecture</h2>
+  <h2 style="padding-left: 20px;">Proposal: Agentic Governance System Architecture<br>Lukas Bures, Ph.D.</h2>
   <div id="cy"></div>
   <div id="tooltipBox"></div>
   <script>
@@ -219,13 +219,13 @@
       I1: `
         <strong>Voter UI / Wallet Agent</strong><br/><br/>
         <strong>Purpose:</strong><br/>
-        &bull; Provide UI for human voters.<br/>
+        &bull; Human-facing interface for reviewing proposals and casting or delegating votes.<br/>
         <strong>Input:</strong><br/>
-        &bull; Agent proposals and alerts.<br/>
+        &bull; Summaries, rankings, and alerts from agent pipeline.<br/>
         <strong>Output:</strong><br/>
-        &bull; UX interaction and overrides.<br/>
+        &bull; Signed transactions, vote overrides, and user feedback signals.<br/>
         <strong>Challenges:</strong><br/>
-        &bull; Building user trust.
+        &bull; Building user trust. Minimizing cognitive load. Safe key management.
       `,
       I2: `
         <strong>DAO Treasury Execution Core</strong><br/><br/>
@@ -350,7 +350,7 @@
           style: {
             'label': 'data(label)',
             'font-size': '24px',
-            'background-color': '#e0f0ff',
+            'background-color': '#e5e7eb', // light grey for generic nodes
             'text-valign': 'center',
             'text-halign': 'center',
             'shape': 'round-rectangle',
@@ -362,7 +362,7 @@
         },
         {
           selector: 'node[engine = "langgraph"]',
-          style: { 'background-color': '#d6eaff' }
+          style: { 'background-color': '#a3d0ff' }
         },
         {
           selector: 'node[engine = "n8n"]',
@@ -420,5 +420,34 @@
       tooltipBox.style.display = 'none';
     });
   </script>
+<!-- === DAO Governance Failure Cheatsheet (VeChain) === -->
+<section style="max-width:900px;margin:40px auto 0;padding:0 20px;font-size:15px;line-height:1.45;">
+  <h3 style="margin-top:0;">Common DAO Governance Failures</h3>
+
+  <p><strong>1. Low Participation</strong><br/>
+     Problem: Less than 10&nbsp;% of token holders vote, whales dominate outcomes.<br/>
+     Fix: Explainer summaries, auto‑delegation, stake‑aligned proposal feeds.</p>
+
+  <p><strong>2. Information Asymmetry</strong><br/>
+     Problem: Metrics scattered, proposals highly technical, treasury impact unclear.<br/>
+     Fix: MCP data aggregation, Evaluator KPI scoring, citation‑backed justifications.</p>
+
+  <p><strong>3. Coordination Failures</strong><br/>
+     Problem: Developers, validators, holders, and treasury managers act in silos.<br/>
+     Fix: Stakeholder agents negotiate trade‑offs and output ranked priorities.</p>
+
+  <p><strong>4. Governance Capture</strong><br/>
+     Problem: Whales, vote‑buying, or off‑chain “snapshot tyranny” skew decisions.<br/>
+     Fix: Quadratic or reputation weighting, anomaly detection, longitudinal trust scores.</p>
+
+  <p><strong>5. Mis‑aligned Incentives</strong><br/>
+     Problem: Voters favor short‑term price pumps or unsustainable yield strategies.<br/>
+     Fix: Sustainability scoring, impact‑weighted rewards, counterfactual simulations.</p>
+
+  <p><strong>6. Rigid Governance Structures</strong><br/>
+     Problem: One‑size‑fits‑all workflows, no fast‑track for urgent or minor changes.<br/>
+     Fix: Agent‑driven proposal classification and adaptive routing via LangGraph.</p>
+</section>
+<!-- === /DAO Governance Failure Cheatsheet === -->
 </body>
 </html>
