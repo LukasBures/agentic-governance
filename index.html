@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Agentic Governance Diagram</title>
+  <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
+  <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
+  <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/tippy.js@6.2.7/dist/tippy.css" />
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      background: #f9f9f9;
+      padding-bottom: 400px;
+    }
+    #cy {
+      width: 100%;
+      height: 1400px;
+      display: block;
+      background: #fff;
+      position: relative;
+    }
+    #tooltipBox {
+      position: fixed;
+      max-width: 320px;
+      padding: 12px 14px;
+      background: #fffbe7;
+      border: 1px solid #c9b458;
+      border-radius: 6px;
+      font-size: 16px;
+      line-height: 1.4;
+      white-space: normal;
+      display: none;
+      z-index: 1000;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+    }
+  </style>
+</head>
+<body>
+  <h2 style="padding-left: 20px;">Agentic Governance System Architecture</h2>
+  <div id="cy"></div>
+  <div id="tooltipBox"></div>
+  <script>
+    const tooltips = {
+      A: `
+        <strong>External Data Sources</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Gather on-chain & off-chain data (KPIs, votes, forums, prices).<br/>
+        <strong>Input:</strong><br/>
+        &bull; APIs, smart contracts, discussion forums.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Raw data streams.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Inconsistent formats and missing data.<br/>
+        &bull; Vulnerable to sybil-injected sources.
+      `,
+      B: `
+        <strong>MCP Processor</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Normalize schemas, assign trust scores, align timeframes.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Raw external data.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Structured, trusted information.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Handling malformed inputs and bias.<br/>
+        &bull; Keeping schema up-to-date.
+      `,
+      C: `
+        <strong>Shared Memory</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Central vector DB and LangGraph memory for agents.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Processed proposals and context.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Queryable memory state.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Managing context overflow and sync delays.<br/>
+        &bull; Avoiding race conditions.
+      `,
+      D1: `
+        <strong>Evaluator Agent</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Score proposals using domain metrics.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Proposal data from shared memory.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Evaluation scores.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Bias towards certain KPIs.<br/>
+        &bull; Risk of short-term overfitting.
+      `,
+      D2: `
+        <strong>Sentiment Agent</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Analyze community feedback and sentiment.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Social platforms and forums.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Sentiment vectors.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Detecting bots and NLP misreads.<br/>
+        &bull; Handling emotional volatility.
+      `,
+      D3: `
+        <strong>Risk Analyst Agent</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Analyze treasury and risk exposure.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Budget proposals and current funds.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Risk flags and cost scenarios.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Underestimating systemic risks.
+      `,
+      E1: `
+        <strong>Simulation Agent</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Simulate "what-if" outcomes.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Scored proposals.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Forecast scenarios.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Model accuracy limitations.<br/>
+        &bull; Reliance on assumptions.
+      `,
+      E2: `
+        <strong>Stakeholder Agent</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Represent key stakeholders.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Stakeholder priorities.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Preference models.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Aligning diverse community interests.
+      `,
+      E3: `
+        <strong>Influence Mapper Agent</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Track public opinion shifts.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Social trend signals.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Influence maps.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Lag and manipulation risks.<br/>
+        &bull; Fragmented data sources.
+      `,
+      F1: `
+        <strong>Adversarial Agent Arena</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Perform adversarial stress-testing.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Simulated and real proposals.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Weakness reports.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Complexity of scenarios.<br/>
+        &bull; Avoiding false positives.
+      `,
+      F2: `
+        <strong>Trust & Behavior Agent</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Detect Sybil attacks and voting anomalies.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Voting logs and behavioral data.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Trust and anomaly scores.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Balancing privacy and explainability.
+      `,
+      G: `
+        <strong>Deliberation Arena</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Agentic critique and negotiation.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Weakness reports (Adversarial Arena) and anomaly scores (Trust&nbsp;&amp;&nbsp;Behavior Agent).<br/>
+        <strong>Output:</strong><br/>
+        &bull; Refined proposals.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Avoiding coordination deadlocks.
+      `,
+      H1: `
+        <strong>Recommender Agent</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Rank proposals using trade-offs and policy.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Refined proposals produced by the Deliberation Arena.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Ranked list.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Weighting bias and stacking effects.
+      `,
+      H2: `
+        <strong>Explainer Agent</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Provide natural-language justifications.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Ranked proposals generated by the Recommender Agent.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Human-readable summaries.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Oversimplification and hallucinations.
+      `,
+      H3: `
+        <strong>Voter Agent</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Cast and delegate votes.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Explained rankings provided by the Explainer Agent.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Voting actions.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Delegation errors.
+      `,
+      I1: `
+        <strong>Voter UI / Wallet Agent</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Provide UI for human voters.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Agent proposals and alerts.<br/>
+        <strong>Output:</strong><br/>
+        &bull; UX interaction and overrides.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Building user trust.
+      `,
+      I2: `
+        <strong>DAO Treasury Execution Core</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Execute DAO treasury flows.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Proposal execution directives.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Fund transfers.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Bridge failures and malicious targets.
+      `,
+      J: `
+        <strong>Post-Vote Evaluation Agent</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Evaluate real-world outcomes.<br/>
+        <strong>Input:</strong><br/>
+        &bull; KPI results and execution logs.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Score adjustments.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Attribution gaps and lagged feedback.
+      `,
+      K: `
+        <strong>Constitution</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Adjust governance logic and policies.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Post-vote evaluation.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Updated routing and rules.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Drift, overreach, and conflicting updates.
+      `,
+      L1: `
+        <strong>Recursive Governance Learner</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Learn from past governance behavior.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Historical records.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Tuned parameters.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Reinforcing bad patterns.
+      `,
+      L2: `
+        <strong>DAO-to-DAO Diplomacy Agent</strong><br/><br/>
+        <strong>Purpose:</strong><br/>
+        &bull; Manage cross-DAO coordination.<br/>
+        <strong>Input:</strong><br/>
+        &bull; Inter-DAO proposals.<br/>
+        <strong>Output:</strong><br/>
+        &bull; Execution requests and policy alignment.<br/>
+        <strong>Challenges:</strong><br/>
+        &bull; Timeline mismatches and failure propagation.
+      `
+    };
+
+    const elements = {
+      nodes: [
+        { data: { id: "A", label: "External Data Sources", engine: "n8n" } },
+        { data: { id: "B", label: "MCP Processor", engine: "n8n" } },
+        { data: { id: "C", label: "Shared Memory", type: "memory" } },
+        { data: { id: "D1", label: "Evaluator Agent", type: "agent", engine: "langgraph" } },
+        { data: { id: "D2", label: "Sentiment Agent", type: "agent", engine: "langgraph" } },
+        { data: { id: "D3", label: "Risk Analyst Agent", type: "agent", engine: "langgraph" } },
+        { data: { id: "E1", label: "Simulation Agent", type: "agent", engine: "langgraph" } },
+        { data: { id: "E2", label: "Stakeholder Agent", type: "agent", engine: "langgraph" } },
+        { data: { id: "E3", label: "Influence Mapper Agent", type: "agent", engine: "langgraph" } },
+        { data: { id: "F1", label: "Adversarial Agent Arena", type: "agent", engine: "langgraph" } },
+        { data: { id: "F2", label: "Trust & Behavior Agent", type: "agent", engine: "langgraph" } },
+        { data: { id: "G", label: "Deliberation Arena", type: "memory" } },
+        { data: { id: "H1", label: "Recommender Agent", type: "agent", engine: "langgraph" } },
+        { data: { id: "H2", label: "Explainer Agent", type: "agent", engine: "langgraph" } },
+        { data: { id: "H3", label: "Voter Agent", type: "agent", engine: "langgraph" } },
+        { data: { id: "I1", label: "Voter UI / Wallet Agent", type: "execution", engine: "n8n" } },
+        { data: { id: "I2", label: "DAO Treasury Execution Core", type: "execution", engine: "n8n" } },
+        { data: { id: "J", label: "Post-Vote Evaluation Agent", type: "agent", engine: "langgraph" } },
+        { data: { id: "K", label: "Constitution", type: "memory" } },
+        { data: { id: "L1", label: "Recursive Governance Learner", type: "agent", engine: "langgraph" } },
+        { data: { id: "L2", label: "DAO-to-DAO Diplomacy Agent", type: "agent", engine: "langgraph" } },
+      ],
+      edges: [
+        { data: { source: "A", target: "B" } },
+        { data: { source: "B", target: "C" } },
+        { data: { source: "C", target: "D1" } },
+        { data: { source: "C", target: "D2" } },
+        { data: { source: "C", target: "D3" } },
+        { data: { source: "D1", target: "E1" } },
+        { data: { source: "D2", target: "E2" } },
+        { data: { source: "D2", target: "E3" } },  // Sentiment ➜ Influence Mapper
+        { data: { source: "D2", target: "E1" } },  // Sentiment ➜ Simulation
+        { data: { source: "D3", target: "E1" } },  // Risk ➜ Simulation
+        { data: { source: "D1", target: "E2" } },  // Evaluator ➜ Stakeholder
+        { data: { source: "D3", target: "E2" } },  // Risk ➜ Stakeholder
+        { data: { source: "E1", target: "F1" } },
+        { data: { source: "E2", target: "F2" } },
+        { data: { source: "E3", target: "F2" } },
+        { data: { source: "F1", target: "G" } },
+        { data: { source: "F2", target: "G" } },
+        { data: { source: "G", target: "H1" } },
+        { data: { source: "H1", target: "H2" } },
+        { data: { source: "H2", target: "H3" } },
+        { data: { source: "H3", target: "I1" } },
+        { data: { source: "H3", target: "I2" } },
+        { data: { source: "I2", target: "J" } },
+        { data: { source: "J", target: "K" } },
+        { data: { source: "K", target: "L1" } },
+        { data: { source: "K", target: "L2" } },
+        { data: { source: "L2", target: "I2" } },
+      ]
+    };
+
+    const cy = cytoscape({
+      container: document.getElementById('cy'),
+      elements: elements,
+      boxSelectionEnabled: false,
+      autoungrabify: true,
+      style: [
+        {
+          selector: 'node',
+          style: {
+            'label': 'data(label)',
+            'font-size': '24px',
+            'background-color': '#e0f0ff',
+            'text-valign': 'center',
+            'text-halign': 'center',
+            'shape': 'round-rectangle',
+            'width': '260px',
+            'padding': '10px',
+            'text-wrap': 'wrap',
+            'text-max-width': '240px'
+          }
+        },
+        {
+          selector: 'node[engine = "langgraph"]',
+          style: { 'background-color': '#d6eaff' }
+        },
+        {
+          selector: 'node[engine = "n8n"]',
+          style: { 'background-color': '#ffe8cc' }
+        },
+        {
+          selector: 'node[type = "memory"]',
+          style: { 'background-color': '#fff3cd' }
+        },
+        {
+          selector: 'node[type = "execution"]',
+          style: { 'background-color': '#fde2e2' }
+        },
+        {
+          selector: 'edge',
+          style: {
+            'width': 4,
+            'line-color': '#999',
+            'target-arrow-color': '#999',
+            'target-arrow-shape': 'triangle',
+            'curve-style': 'bezier'
+          }
+        }
+      ],
+      userZoomingEnabled: false,
+      layout: {
+        name: 'dagre',
+        rankDir: 'TB',
+        nodeSep: 50,
+        edgeSep: 10,
+        rankSep: 100
+      }
+    });
+
+
+
+    const tooltipBox = document.getElementById('tooltipBox');
+
+    cy.on('mouseover', 'node', (evt) => {
+      const node = evt.target;
+      const id = node.id();
+      const content = tooltips[id];
+      if (!content) return;
+      const pos = node.renderedPosition();
+      const rect = cy.container().getBoundingClientRect();
+      tooltipBox.innerHTML = content;
+      const clientX = rect.left + pos.x;
+      const clientY = rect.top + pos.y;
+      tooltipBox.style.left = `${clientX + 10}px`;
+      tooltipBox.style.top = `${clientY + 10}px`;
+      tooltipBox.style.display = 'block';
+    });
+
+    cy.on('mouseout', 'node', (evt) => {
+      tooltipBox.style.display = 'none';
+    });
+  </script>
+</body>
+</html>
